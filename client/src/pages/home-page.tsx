@@ -5,10 +5,16 @@ import ProductGrid from "@/components/product/product-grid";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { ArrowRight } from "lucide-react"; // Added import
+import { ShoppingBag } from "lucide-react"; // Added import
+import { Tag } from "lucide-react"; // Added import
+import { Badge } from "@/components/ui/badge"; // Added import
+
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false); // Added state for search focus
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -17,7 +23,7 @@ export default function HomePage() {
   // Only show available products with stock to customers
   const availableProducts = products?.filter(p => p.isAvailable && p.stockQuantity > 0);
 
-  const categories = availableProducts 
+  const categories = availableProducts
     ? [...new Set(availableProducts.map(p => p.category))]
     : [];
 
@@ -29,45 +35,60 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-yellow-50">
-      <div className="hero-section mb-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-playfair font-bold mb-6">
-              Amrutas Art Gallery
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <div id="hero-section" className="hero-section mb-12 transition-all duration-1000 ease-out opacity-0 translate-y-4">
+        <div className="container mx-auto px-4 py-16 md:py-24">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-playfair font-bold mb-6">
+              Discover Amazing Products
             </h1>
-            <p className="text-xl md:text-2xl max-w-2xl mx-auto">
-              Discover unique handcrafted artworks that tell stories and transform spaces
+            <p className="text-lg md:text-xl mb-8">
+              Find the perfect items for your collection
             </p>
+            <div className="relative mx-auto max-w-xl">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white opacity-70" />
+              <Input
+                className={`pl-12 py-6 text-lg rounded-full border-2 border-white/30 bg-white/20 backdrop-blur-sm text-white placeholder:text-white/70 focus-visible:ring-white ${isSearchFocused ? 'pr-32' : 'pr-4'}`}
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+              />
+              {isSearchFocused && (
+                <Button className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full px-4" size="sm">
+                  Search <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-lg shadow-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search artworks..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      <div className="container mx-auto px-4 pb-16">
+        {/* Categories Section */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <Tag className="mr-2 text-primary" />
+            <h2 className="text-2xl font-playfair font-semibold">Categories</h2>
           </div>
-          <div className="flex gap-2 overflow-x-auto">
+
+          <div className="flex flex-wrap gap-2 mb-6">
             <Button
               variant={selectedCategory === null ? "default" : "outline"}
               onClick={() => setSelectedCategory(null)}
-              className={selectedCategory === null ? "art-gradient" : ""}
+              className="rounded-full"
             >
-              All
+              All Products
             </Button>
+
             {categories.map((category) => (
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
                 onClick={() => setSelectedCategory(category)}
-                className={selectedCategory === category ? "art-gradient" : ""}
+                className="rounded-full"
               >
                 {category}
               </Button>
@@ -75,7 +96,39 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Products Section */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <ShoppingBag className="mr-2 text-primary" />
+              <h2 className="text-2xl font-playfair font-semibold">Products</h2>
+            </div>
+
+            {filteredProducts && (
+              <Badge variant="outline" className="text-sm px-3 py-1">
+                {filteredProducts.length} products
+              </Badge>
+            )}
+          </div>
+        </div>
+
         <ProductGrid products={filteredProducts || []} isLoading={isLoading} />
+
+        {filteredProducts?.length === 0 && !isLoading && (
+          <div className="text-center py-16">
+            <div className="inline-block p-4 rounded-full bg-gray-100 mb-4">
+              <ShoppingBag className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-medium mb-2">No Products Found</h3>
+            <p className="text-gray-500 mb-4">Try adjusting your search or category filters</p>
+            <Button onClick={() => {
+              setSearchTerm('');
+              setSelectedCategory(null);
+            }}>
+              Clear Filters
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

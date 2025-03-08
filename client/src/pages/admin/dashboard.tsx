@@ -298,7 +298,21 @@ export default function AdminDashboard() {
                   <TableCell>{product.title}</TableCell>
                   <TableCell>{product.category}</TableCell>
                   <TableCell>${product.price}</TableCell>
-                  <TableCell>{product.stockQuantity}</TableCell>
+                  <TableCell>
+                    {product.stockQuantity <= 0 ? (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                        Out of Stock
+                      </span>
+                    ) : product.stockQuantity <= 5 ? (
+                      <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
+                        Low: {product.stockQuantity}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                        {product.stockQuantity}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {product.isAvailable ? (
                       <span className="text-green-600">Available</span>

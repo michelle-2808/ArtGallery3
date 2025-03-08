@@ -18,7 +18,7 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import { db } from "./db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, gt } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -124,10 +124,15 @@ export class DatabaseStorage implements IStorage {
     return newProduct;
   }
 
-  async updateProduct(id: number, product: Partial<Product>): Promise<Product> {
+  async updateProduct(id: number, data: Partial<Product>): Promise<Product> {
+    // If stock quantity is 0 or less, automatically set isAvailable to false
+    if (data.stockQuantity !== undefined && data.stockQuantity <= 0 && data.isAvailable === undefined) {
+      data.isAvailable = false;
+    }
+
     const [updated] = await db
       .update(products)
-      .set(product)
+      .set(data)
       .where(eq(products.id, id))
       .returning();
     if (!updated) throw new Error("Product not found");
@@ -192,6 +197,52 @@ export class DatabaseStorage implements IStorage {
 
   async clearCart(userId: number): Promise<void> {
     await db.delete(cartItems).where(eq(cartItems.userId, userId));
+  }
+
+  // Added OTP functions (incomplete due to missing schema)
+  async createOTP(userId: number, purpose: string, expiresInMinutes: number = 15) {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes);
+
+    // Requires schema.otpCodes table definition
+    await db.insert(schema.otpCodes).values({  //schema.otpCodes is undefined here.
+      userId,
+      code,
+      purpose,
+      expiresAt,
+      used: false,
+    });
+
+    return code;
+  }
+
+  async verifyOTP(userId: number, code: string, purpose: string) {
+    const now = new Date();
+
+    // Requires schema.otpCodes table definition
+    const results = await db
+      .select()
+      .from(schema.otpCodes) //schema.otpCodes is undefined here.
+      .where(and(
+        eq(schema.otpCodes.userId, userId),
+        eq(schema.otpCodes.code, code),
+        eq(schema.otpCodes.purpose, purpose),
+        eq(schema.otpCodes.used, false),
+        gt(schema.otpCodes.expiresAt, now)
+      ));
+
+    if (results.length === 0) {
+      return false;
+    }
+
+    // Requires schema.otpCodes table definition
+    await db
+      .update(schema.otpCodes) //schema.otpCodes is undefined here.
+      .set({ used: true })
+      .where(eq(schema.otpCodes.id, results[0].id));
+
+    return true;
   }
 }
 

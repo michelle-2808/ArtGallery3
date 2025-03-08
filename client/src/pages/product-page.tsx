@@ -102,6 +102,32 @@ export default function ProductPage() {
             <h2 className="text-xl font-semibold mb-3 text-primary">Category</h2>
             <p className="text-lg text-gray-700 capitalize">{product.category}</p>
           </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-3 text-primary">Availability</h2>
+            {!product.isAvailable || product.stockQuantity === 0 ? (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-700 font-medium flex items-center">
+                  <span className="mr-2 h-3 w-3 rounded-full bg-red-500 inline-block"></span>
+                  Out of Stock
+                </p>
+              </div>
+            ) : product.stockQuantity <= 5 ? (
+              <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-amber-700 font-medium flex items-center">
+                  <span className="mr-2 h-3 w-3 rounded-full bg-amber-500 inline-block"></span>
+                  Low Stock: Only {product.stockQuantity} left!
+                </p>
+              </div>
+            ) : (
+              <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-700 font-medium flex items-center">
+                  <span className="mr-2 h-3 w-3 rounded-full bg-green-500 inline-block"></span>
+                  In Stock: {product.stockQuantity} available
+                </p>
+              </div>
+            )}
+          </div>
 
           {!user?.isAdmin && (
             <Button

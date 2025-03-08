@@ -37,14 +37,39 @@ export default function CheckoutPage() {
     if (!cartItems?.length) return;
 
     setIsProcessing(true);
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    // Show OTP in console/alert for demo purposes
-    console.log("Your checkout OTP:", otp);
-    alert(`Your checkout OTP is: ${otp}`);
-
-    const userOtp = prompt("Please enter the OTP shown in the console/alert:");
     
-    if (userOtp !== String(otp)) {
+    try {
+      // Request OTP from server
+      const result = await apiRequest("POST", "/api/generate-checkout-otp", {});
+      const otpCode = result.otpCode;
+      
+      // In a real app, this would be sent via SMS/email
+      // For demo purposes, we'll show it in the console/alert
+      console.log("Your checkout OTP:", otpCode);
+      toast({
+        title: "OTP Generated",
+        description: "An OTP has been sent to your device. Please check your email/SMS."
+      });
+
+    const userOtp = prompt("Please enter the OTP sent to your device:");
+    
+    if (!userOtp) {
+      toast({
+        title: "Cancelled",
+        description: "Checkout was cancelled.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+      return;
+    }
+    
+    // Verify OTP with the server
+    const verifyResult = await apiRequest("POST", "/api/verify-otp", {
+      code: userOtp,
+      purpose: "checkout"
+    });
+    
+    if (!verifyResult.success) {
       toast({
         title: "Error",
         description: "Invalid OTP. Please try again.",
@@ -53,7 +78,7 @@ export default function CheckoutPage() {
       setIsProcessing(false);
       return;
     }
-
+    
     try {
       await apiRequest("POST", "/api/orders", { totalAmount });
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });

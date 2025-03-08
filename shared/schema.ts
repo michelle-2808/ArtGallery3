@@ -43,6 +43,15 @@ export const cartItems = pgTable("cart_items", {
   quantity: integer("quantity").notNull(),
 });
 
+export const otpCodes = pgTable("otp_codes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  code: text("code").notNull(),
+  purpose: text("purpose").notNull(), // "checkout", "registration", etc.
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false).notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,

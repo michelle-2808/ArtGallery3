@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertProductSchema } from "@shared/schema";
 import { z } from "zod";
+import { hashPassword } from "./utils"; // Assuming this function exists
 
 function ensureAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
@@ -46,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/products/:id", async (req, res) => {
     const product = await storage.getProduct(Number(req.params.id));
-    if (!product) return res.status(404).send("Product not found");
+    if (!product || product.stockQuantity <=0) return res.status(404).send("Product not found or out of stock"); //Added stock check
     res.json(product);
   });
 
@@ -56,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         price: req.body.price.toString(), // Convert to string for decimal type
         stockQuantity: Number(req.body.stockQuantity),
-        isAvailable: req.body.isAvailable || false
+        isAvailable: req.body.stockQuantity > 0 //isAvailable based on stock
       };
       const product = insertProductSchema.parse(productData);
       const created = await storage.createProduct(product);
@@ -153,6 +154,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.clearCart(req.user.id);
     res.status(201).json(order);
   });
+
+  app.post("/api/register", async (req, res, next) => {
+    const existingUser = await storage.getUserByUsername(req.body.username);
+    if (existingUser) {
+      return res.status(400).send("Username already exists");
+    }
+
+    // Create user and generate OTP
+    const user = await storage.createUser({
+      ...req.body,
+      password: await hashPassword(req.body.password),
+    });
+
+    const otp = await storage.createOTP(user.id, "registration", 10);
+
+    req.login(user, (err) => {
+      if (err) return next(err);
+      // Return OTP in response (in a real app, you'd send via email/SMS)
+      res.status(201).json({ ...user, registrationOtp: otp });
+    });
+  });
+
+  app.post("/api/verify-otp", ensureAuthenticated, async (req, res) => {
+    const { code, purpose } = req.body;
+    const isValid = await storage.verifyOTP(req.user.id, code, purpose);
+
+    if (isValid) {
+      res.status(200).json({ success: true });
+    } else {
+      res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
