@@ -18,7 +18,7 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -34,6 +34,64 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Analytics methods
+  async getRevenueOverTime(days: number) {
+    const result = await db.execute(sql`
+      WITH dates AS (
+        SELECT generate_series(
+          CURRENT_DATE - INTERVAL '${days} days',
+          CURRENT_DATE,
+          INTERVAL '1 day'
+        )::date AS date
+      )
+      SELECT 
+        dates.date::text as name,
+        COALESCE(SUM(o.total_amount), 0) as value
+      FROM dates
+      LEFT JOIN orders o ON DATE(o.created_at) = dates.date
+      GROUP BY dates.date
+      ORDER BY dates.date
+    `);
+    return result.rows;
+  }
+
+  async getOrderStatusBreakdown() {
+    const result = await db.execute(sql`
+      SELECT 
+        status as name,
+        COUNT(*) as value
+      FROM orders
+      GROUP BY status
+    `);
+    return result.rows;
+  }
+
+  async getAnalyticsSummary() {
+    const [productCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(products);
+
+    const [orderCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(orders);
+
+    const [revenue] = await db
+      .select({ sum: sql<number>`COALESCE(SUM(total_amount), 0)` })
+      .from(orders);
+
+    const averageOrderValue = orderCount.count > 0 
+      ? revenue.sum / orderCount.count 
+      : 0;
+
+    return {
+      totalProducts: productCount.count,
+      totalOrders: orderCount.count,
+      totalRevenue: revenue.sum,
+      averageOrderValue,
+    };
+  }
+
+  // Existing methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;

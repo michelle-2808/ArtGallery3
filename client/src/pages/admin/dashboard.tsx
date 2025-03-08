@@ -41,35 +41,19 @@ export default function AdminDashboard() {
     queryKey: ["/api/products"],
   });
 
-  const { data: orders, isLoading: isLoadingOrders } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+  const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
+    queryKey: ["/api/analytics/revenue"],
   });
 
-  // Calculate statistics
-  const totalProducts = products?.length || 0;
-  const totalOrders = orders?.length || 0;
-  const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.totalAmount), 0) || 0;
-  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const { data: orderStatusData, isLoading: isLoadingOrderStatus } = useQuery({
+    queryKey: ["/api/analytics/order-status"],
+  });
 
-  // Generate demo data for charts
-  const revenueData = [
-    { name: 'Mar 02', value: 4000 },
-    { name: 'Mar 03', value: 3000 },
-    { name: 'Mar 04', value: 2000 },
-    { name: 'Mar 05', value: 2780 },
-    { name: 'Mar 06', value: 1890 },
-    { name: 'Mar 07', value: 2390 },
-    { name: 'Mar 08', value: 3490 },
-  ];
+  const { data: summary, isLoading: isLoadingSummary } = useQuery({
+    queryKey: ["/api/analytics/summary"],
+  });
 
-  const orderStatusData = [
-    { name: 'Processing', value: 5 },
-    { name: 'Shipped', value: 10 },
-    { name: 'Delivered', value: 15 },
-    { name: 'Cancelled', value: 2 },
-  ];
-
-  if (isLoadingProducts || isLoadingOrders) {
+  if (isLoadingProducts || isLoadingRevenue || isLoadingOrderStatus || isLoadingSummary) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -130,7 +114,7 @@ export default function AdminDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalProducts}</div>
+            <div className="text-2xl font-bold">{summary?.totalProducts}</div>
             <p className="text-xs text-muted-foreground">
               Active listings in the store
             </p>
@@ -142,7 +126,7 @@ export default function AdminDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalOrders}</div>
+            <div className="text-2xl font-bold">{summary?.totalOrders}</div>
             <p className="text-xs text-muted-foreground">
               Orders processed
             </p>
@@ -154,7 +138,7 @@ export default function AdminDashboard() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${summary?.totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Total revenue generated
             </p>
@@ -166,7 +150,7 @@ export default function AdminDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${averageOrderValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${summary?.averageOrderValue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Per order average
             </p>
@@ -218,7 +202,7 @@ export default function AdminDashboard() {
                       `${name} ${(percent * 100).toFixed(0)}%`
                     }
                   >
-                    {orderStatusData.map((entry, index) => (
+                    {orderStatusData?.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
@@ -262,30 +246,30 @@ export default function AdminDashboard() {
 }
 
 async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const productData = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      price: parseFloat(formData.get("price") as string),
-      imageUrl: formData.get("imageUrl") as string,
-      category: formData.get("category") as string,
-      stockQuantity: parseInt(formData.get("stockQuantity") as string),
-    };
+  e.preventDefault();
+  const formData = new FormData(e.currentTarget);
+  const productData = {
+    title: formData.get("title") as string,
+    description: formData.get("description") as string,
+    price: parseFloat(formData.get("price") as string),
+    imageUrl: formData.get("imageUrl") as string,
+    category: formData.get("category") as string,
+    stockQuantity: parseInt(formData.get("stockQuantity") as string),
+  };
 
-    try {
-      await apiRequest("POST", "/api/products", productData);
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setIsAddingProduct(false);
-      toast({
-        title: "Success",
-        description: "Product added successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add product",
-        variant: "destructive",
-      });
-    }
+  try {
+    await apiRequest("POST", "/api/products", productData);
+    queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    setIsAddingProduct(false);
+    toast({
+      title: "Success",
+      description: "Product added successfully",
+    });
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to add product",
+      variant: "destructive",
+    });
   }
+}
