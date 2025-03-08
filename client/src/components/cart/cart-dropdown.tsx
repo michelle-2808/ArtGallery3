@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function CartDropdown() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: cartItems, isLoading: isLoadingCart } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
@@ -35,30 +37,6 @@ export default function CartDropdown() {
       toast({
         title: "Error",
         description: "Failed to remove item",
-        variant: "destructive",
-      });
-    }
-  }
-
-  async function checkout() {
-    if (!cartItems?.length) return;
-
-    try {
-      const totalAmount = cartItems.reduce((total, item) => {
-        const product = products?.find(p => p.id === item.productId);
-        return total + (product?.price || 0) * item.quantity;
-      }, 0);
-
-      await apiRequest("POST", "/api/orders", { totalAmount });
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      toast({
-        title: "Success",
-        description: "Order placed successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to place order",
         variant: "destructive",
       });
     }
@@ -111,11 +89,11 @@ export default function CartDropdown() {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Button
-                className="w-full"
-                onClick={checkout}
+                className="w-full section-primary"
+                onClick={() => setLocation("/checkout")}
                 disabled={!cartItems?.length}
               >
-                Checkout
+                Proceed to Checkout
               </Button>
             </DropdownMenuItem>
           </>

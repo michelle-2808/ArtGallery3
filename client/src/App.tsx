@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/home-page";
 import AdminDashboard from "@/pages/admin/dashboard";
 import ProductPage from "@/pages/product-page";
+import CheckoutPage from "@/pages/checkout-page";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/" component={HomePage} />
       <Route path="/product/:id" component={ProductPage} />
+      <ProtectedRoute path="/checkout" component={CheckoutPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
