@@ -35,33 +35,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analytics methods
-  async getRevenueOverTime(days: number): Promise<any[]> {
+  async getRevenueOverTime(days: number = 7): Promise<any[]> {
     const result = await db.execute(sql`
-      WITH dates AS (
-        SELECT generate_series(
-          CURRENT_DATE - INTERVAL '1 day' * ${days}::integer,
-          CURRENT_DATE,
-          INTERVAL '1 day'
-        )::date AS date
+      WITH RECURSIVE dates AS (
+        SELECT date_trunc('day', CURRENT_DATE) as date
+        UNION ALL
+        SELECT date - interval '1 day'
+        FROM dates
+        WHERE date > CURRENT_DATE - make_interval(days := ${days})
       )
       SELECT 
-        dates.date::text as date,
+        to_char(dates.date, 'YYYY-MM-DD') as date,
         COALESCE(SUM(o.total_amount), 0) as revenue
       FROM dates
-      LEFT JOIN ${orders} o ON DATE(o.created_at) = dates.date
+      LEFT JOIN ${orders} o ON date_trunc('day', o.created_at) = dates.date
       GROUP BY dates.date
-      ORDER BY dates.date
+      ORDER BY dates.date DESC
+      LIMIT ${days}
     `);
-    return result.rows;
+
+    return result.rows.map(row => ({
+      date: row.date,
+      revenue: parseFloat(row.revenue)
+    }));
   }
 
-  async getOrderStatusBreakdown(): Promise<any> {
+  async getOrderStatusBreakdown(): Promise<any[]> {
     const result = await db.execute(sql`
+      WITH status_counts AS (
+        SELECT 
+          status,
+          COUNT(*) as count
+        FROM ${orders}
+        GROUP BY status
+      ),
+      total AS (
+        SELECT COALESCE(SUM(count), 0) as total_count 
+        FROM status_counts
+      )
       SELECT 
-        status as name,
-        COUNT(*)::integer as value
-      FROM ${orders}
-      GROUP BY status
+        COALESCE(s.status, 'No Orders') as name,
+        COALESCE(s.count, 0)::integer as value,
+        ROUND((COALESCE(s.count, 0) * 100.0 / GREATEST(t.total_count, 1))::numeric, 1) as percentage
+      FROM 
+        (SELECT 'pending' as status UNION ALL
+         SELECT 'processing' UNION ALL
+         SELECT 'completed' UNION ALL
+         SELECT 'cancelled') as all_statuses
+      LEFT JOIN status_counts s USING (status)
+      CROSS JOIN total t
+      ORDER BY 
+        CASE s.status 
+          WHEN 'pending' THEN 1
+          WHEN 'processing' THEN 2
+          WHEN 'completed' THEN 3
+          WHEN 'cancelled' THEN 4
+          ELSE 5
+        END
     `);
     return result.rows;
   }
@@ -89,7 +119,7 @@ export class DatabaseStorage implements IStorage {
 
       // Use COALESCE for inventory value calculation too
       const inventoryResult = await db.execute(sql`
-        SELECT COALESCE(SUM(price::numeric * "stockQuantity"), 0) as total_inventory_value
+        SELECT COALESCE(SUM(price::numeric * stock_quantity), 0) as total_inventory_value
         FROM ${products}
       `);
       const inventoryValue = parseFloat(inventoryResult.rows[0]?.total_inventory_value || "0");
