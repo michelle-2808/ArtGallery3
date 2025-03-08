@@ -51,9 +51,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/products", ensureAdmin, async (req, res) => {
-    const product = insertProductSchema.parse(req.body);
-    const created = await storage.createProduct(product);
-    res.status(201).json(created);
+    try {
+      const productData = {
+        ...req.body,
+        price: Number(req.body.price),
+        stockQuantity: Number(req.body.stockQuantity)
+      };
+      const product = insertProductSchema.parse(productData);
+      const created = await storage.createProduct(product);
+      res.status(201).json(created);
+    } catch (error) {
+      console.error('Product creation error:', error);
+      res.status(400).json({ error: error.message });
+    }
   });
 
   app.patch("/api/products/:id", ensureAdmin, async (req, res) => {
