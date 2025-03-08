@@ -1,7 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedDatabase } from "./seed-data"; // Added import for seedDatabase
+import { seedDatabase } from "./seed-data"; // Import seedDatabase
+
+// Call seedDatabase when the server starts
+seedDatabase().catch(err => {
+  console.error("Error seeding database:", err);
+});
 
 const app = express();
 app.use(express.json());

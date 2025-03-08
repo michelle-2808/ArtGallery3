@@ -11,12 +11,11 @@ export const queryClient = new QueryClient({
   },
 });
 
-export async function apiRequest<T = any>(
-  endpoint: string,
+export async function apiRequest<T>(
+  url: string,
   method: string = "GET",
   data?: unknown | undefined,
 ): Promise<T> {
-  const url = endpoint.startsWith("/api") ? endpoint : `/api${endpoint}`;
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -24,7 +23,7 @@ export async function apiRequest<T = any>(
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    throw new Error(`API request failed: ${res.statusText}`);
   }
 
   // For DELETE requests that return 204 No Content

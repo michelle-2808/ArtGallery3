@@ -82,7 +82,14 @@ async function seedDatabase() {
 }
 
 // Run the seed function if this file is executed directly
-if (require.main === module) {
+// For ES modules we need a different approach than require.main === module
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+if (process.argv[1] === __filename) {
   seedDatabase()
     .then(() => process.exit(0))
     .catch((error) => {

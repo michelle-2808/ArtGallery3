@@ -13,7 +13,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
-    queryFn: () => apiRequest<Product[]>("/products"),
+    queryFn: () => apiRequest<Product[]>("/api/products"),
   });
 
   const filteredProducts = useMemo(() => {
