@@ -1,189 +1,222 @@
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { CartItem, Product } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, CreditCard } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { useState, useEffect } from "react";
-
-function OTPVerificationStep({ onSuccess }: { onSuccess: () => void }) {
-  const [otp, setOtp] = useState("");
-  const [displayOtp, setDisplayOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
-  // Generate and display OTP (simulating server response)
-  useEffect(() => {
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setDisplayOtp(generatedOtp);
-
-    // Show OTP in alert
-    alert(`Your OTP for checkout verification is: ${generatedOtp}`);
-  }, []);
-
-  async function handleVerify() {
-    if (!otp || otp.length < 6) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid OTP",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // For demo purposes, compare with displayed OTP
-      if (otp === displayOtp) {
-        toast({
-          title: "Success",
-          description: "OTP verified successfully",
-        });
-        onSuccess();
-      } else {
-        throw new Error("Invalid OTP");
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Invalid OTP. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  return (
-    <div>
-      <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP" />
-      <button onClick={handleVerify} disabled={isLoading}>
-        {isLoading ? "Verifying..." : "Verify"}
-      </button>
-    </div>
-  );
-}
-
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function CheckoutPage() {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const { toast } = useToast();
+  const [otpCode, setOtpCode] = useState("");
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: cartItems, isLoading: isLoadingCart } = useQuery<CartItem[]>({
+  const { data: cartItems, isLoading } = useQuery({
     queryKey: ["/api/cart"],
-    queryFn: () => apiRequest("/api/cart"), //Corrected API call
+    queryFn: async () => await apiRequest("/api/cart"),
+    enabled: !!user,
   });
 
-  const { data: products } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
-    queryFn: () => apiRequest("/api/products") //Corrected API call
-  });
-
-  if (!user || user.isAdmin) {
-    setLocation("/");
-    return null;
-  }
-
-  const totalAmount = cartItems?.reduce((total, item) => {
-    const product = products?.find(p => p.id === item.productId);
-    return total + (Number(product?.price) || 0) * item.quantity;
-  }, 0) || 0;
-
-  async function handleCheckout() {
-    if (!cartItems?.length) return;
-
-    setIsProcessing(true);
-    setShowOTPVerification(true);
-
-    const handleOTPVerificationSuccess = async () => {
-      try {
-        await apiRequest("POST", "/api/orders", { totalAmount });
-        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-        toast({
-          title: "Success",
-          description: "Order placed successfully",
-        });
-        setLocation("/");
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to place order",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-        setShowOTPVerification(false);
-      }
-    };
-
-
-    // Removed redundant OTP generation and verification code
-  }
-
-  if (isLoadingCart) {
+  if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="container mx-auto py-12 text-center">
+        <h2 className="text-2xl font-bold mb-4">Please Log In</h2>
+        <p className="mb-4">You need to be logged in to access the checkout page.</p>
+        <Button onClick={() => navigate("/login")}>Go to Login</Button>
       </div>
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-12 text-center">
+        <p>Loading cart items...</p>
+      </div>
+    );
+  }
+
+  if (!cartItems || cartItems.length === 0) {
+    return (
+      <div className="container mx-auto py-12 text-center">
+        <h2 className="text-2xl font-bold mb-4">Your Cart is Empty</h2>
+        <p className="mb-4">Add some products to your cart before checkout.</p>
+        <Button onClick={() => navigate("/products")}>Browse Products</Button>
+      </div>
+    );
+  }
+
+  const subtotal = cartItems.reduce((acc, item) => {
+    return acc + (parseFloat(item.product.price) * item.quantity);
+  }, 0);
+  
+  const shippingFee = 5.99;
+  const total = subtotal + shippingFee;
+
+  async function handleGenerateOTP() {
+    try {
+      setIsSubmitting(true);
+      const response = await apiRequest("/api/generate-checkout-otp", "POST");
+      
+      setOtpSent(true);
+      setShowOtpInput(true);
+      
+      toast({
+        title: "OTP Generated",
+        description: `Your OTP code is: ${response.code}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate OTP",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePlaceOrder() {
+    try {
+      setIsSubmitting(true);
+      
+      // Verify OTP
+      const otpResponse = await apiRequest("/api/verify-otp", "POST", {
+        code: otpCode,
+        purpose: "checkout"
+      });
+      
+      if (!otpResponse.success) {
+        toast({
+          title: "Invalid OTP",
+          description: "The OTP code you entered is invalid",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Place order
+      await apiRequest("/api/orders", "POST", {
+        totalAmount: total
+      });
+      
+      toast({
+        title: "Order Placed",
+        description: "Your order has been placed successfully",
+      });
+      
+      navigate("/order-confirmation");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to place order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="max-w-2xl mx-auto art-gradient">
-        <CardHeader>
-          <CardTitle className="text-3xl font-playfair text-white">Checkout</CardTitle>
-        </CardHeader>
-        <CardContent className="bg-white rounded-b-lg space-y-6">
-          {cartItems?.map((item) => {
-            const product = products?.find(p => p.id === item.productId);
-            if (!product) return null;
-
-            return (
-              <div key={item.id} className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{product.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.quantity} × ${product.price}
-                  </p>
-                </div>
-                <p className="font-medium">
-                  ${(Number(product.price) * item.quantity).toFixed(2)}
-                </p>
+    <div className="container mx-auto py-12">
+      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+          <Card>
+            <CardContent className="pt-6">
+              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+              
+              <div className="space-y-4">
+                {cartItems.map((item) => (
+                  <div key={item.productId} className="flex items-center gap-4 py-2 border-b">
+                    <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden">
+                      <img
+                        src={item.product.imageUrl || "https://placehold.co/400x400?text=Product"}
+                        alt={item.product.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium">{item.product.title}</h3>
+                      <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">
+                        ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          })}
-
-          <div className="border-t pt-4 mt-4">
-            <div className="flex justify-between items-center">
-              <p className="text-lg font-semibold">Total</p>
-              <p className="text-lg font-bold">${totalAmount.toFixed(2)}</p>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleCheckout}
-            className="w-full section-primary"
-            disabled={!cartItems?.length || isProcessing}
-          >
-            {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Complete Purchase
-              </>
-            )}
-          </Button>
-          {showOTPVerification && <OTPVerificationStep onSuccess={handleOTPVerificationSuccess} />}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div>
+          <Card>
+            <CardContent className="pt-6">
+              <h2 className="text-xl font-semibold mb-4">Payment Summary</h2>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span>${shippingFee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">
+                  <span>Total</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              {showOtpInput ? (
+                <div className="mt-6">
+                  <Label htmlFor="otp">Enter OTP Code</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="mt-1"
+                    placeholder="Enter OTP"
+                  />
+                </div>
+              ) : null}
+            </CardContent>
+            
+            <CardFooter className="flex flex-col gap-2">
+              {!otpSent ? (
+                <Button 
+                  className="w-full" 
+                  onClick={handleGenerateOTP}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Processing..." : "Proceed with OTP Verification"}
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  onClick={handlePlaceOrder}
+                  disabled={isSubmitting || !otpCode}
+                >
+                  {isSubmitting ? "Processing..." : "Place Order"}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

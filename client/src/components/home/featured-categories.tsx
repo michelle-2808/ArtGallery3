@@ -1,45 +1,49 @@
-import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
 
-const categories = [
-  {
-    name: "Paintings",
-    description: "Beautiful hand-painted artworks",
-    image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    name: "Sculptures",
-    description: "3D art pieces for your collection",
-    image: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  },
-  {
-    name: "Pottery",
-    description: "Handcrafted ceramic artworks",
-    image: "https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-  }
-];
+import React from "react";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Product } from "@shared/schema";
 
 export default function FeaturedCategories() {
+  const { data: products } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+    queryFn: async () => await apiRequest("/api/products")
+  });
+
+  // Get unique categories from products
+  const categories = React.useMemo(() => {
+    if (!products) return [];
+    
+    const uniqueCategories = Array.from(
+      new Set(products.filter(p => p.isAvailable).map(p => p.category))
+    ).filter(Boolean);
+    
+    return uniqueCategories.slice(0, 4);
+  }, [products]);
+
+  if (!categories.length) {
+    return null;
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {categories.map((category) => (
-        <div key={category.name} className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow">
-          <img
-            src={category.image}
-            alt={category.name}
-            className="w-full h-64 object-cover transition-transform group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4 text-white">
-            <h3 className="text-xl font-semibold mb-1">{category.name}</h3>
-            <p className="text-sm mb-4 opacity-90">{category.description}</p>
-            <Button asChild variant="outline" className="w-full bg-white/10 backdrop-blur-sm hover:bg-white/20">
-              <Link href={`/products?category=${category.name}`}>
-                Browse {category.name}
-              </Link>
-            </Button>
-          </div>
-        </div>
-      ))}
+    <div className="container mx-auto py-16">
+      <h2 className="text-3xl font-bold mb-12 text-center">Shop By Category</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {categories.map((category) => (
+          <Card key={category} className="overflow-hidden">
+            <CardContent className="p-6 flex flex-col items-center justify-center min-h-[200px]">
+              <h3 className="font-semibold text-xl mb-4 text-center">{category}</h3>
+              <Button asChild variant="outline">
+                <Link to={`/products?category=${category}`}>View Category</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

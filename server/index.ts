@@ -72,9 +72,6 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
 
-    // Seed the database with initial products
-    seedDatabase().catch(err => {
-      console.error("Error seeding database:", err);
-    });
+    // Database already seeded at server start
   });
 })();
