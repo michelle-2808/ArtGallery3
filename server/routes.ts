@@ -54,15 +54,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const productData = {
         ...req.body,
-        price: Number(req.body.price),
-        stockQuantity: Number(req.body.stockQuantity)
+        price: req.body.price.toString(), // Convert to string for decimal type
+        stockQuantity: Number(req.body.stockQuantity),
+        isAvailable: req.body.isAvailable || false
       };
       const product = insertProductSchema.parse(productData);
       const created = await storage.createProduct(product);
       res.status(201).json(created);
     } catch (error) {
-      console.error('Product creation error:', error);
-      res.status(400).json({ error: error.message });
+      if (error instanceof Error) {
+        console.error('Product creation error:', error);
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'An unknown error occurred' });
+      }
     }
   });
 

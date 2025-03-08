@@ -17,18 +17,17 @@ export default function Navbar() {
       <Link href="/">
         <Button variant="ghost">Home</Button>
       </Link>
-      {user?.isAdmin && (
+      {user?.isAdmin ? (
         <Link href="/admin">
-          <Button variant="ghost">Admin</Button>
+          <Button variant="ghost">Admin Dashboard</Button>
         </Link>
+      ) : user && (
+        <CartDropdown />
       )}
       {user ? (
-        <>
-          <CartDropdown />
-          <Button variant="ghost" onClick={() => logoutMutation.mutate()}>
-            Logout
-          </Button>
-        </>
+        <Button variant="ghost" onClick={() => logoutMutation.mutate()}>
+          Logout
+        </Button>
       ) : (
         <Link href="/auth">
           <Button>Login</Button>

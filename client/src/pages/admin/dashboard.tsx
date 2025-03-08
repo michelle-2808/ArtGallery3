@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       imageUrl: formData.get("imageUrl") as string,
       category: formData.get("category") as string,
       stockQuantity: parseInt(formData.get("stockQuantity") as string),
-      isAvailable: formData.get("isAvailable") === "true",
+      isAvailable: (formData.get("isAvailable") as unknown as boolean) || false,
     };
 
     try {
@@ -76,11 +76,19 @@ export default function AdminDashboard() {
         description: "Product added successfully",
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add product",
-        variant: "destructive",
-      });
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add product",
+          variant: "destructive",
+        });
+      }
     }
   }
 
@@ -152,7 +160,7 @@ export default function AdminDashboard() {
                 <Input id="stockQuantity" name="stockQuantity" type="number" required />
               </div>
               <div className="flex items-center space-x-2">
-                <Switch id="isAvailable" name="isAvailable" />
+                <Switch id="isAvailable" name="isAvailable" value="true" />
                 <Label htmlFor="isAvailable">Make Available for Sale</Label>
               </div>
               <Button type="submit" className="w-full">Add Product</Button>
