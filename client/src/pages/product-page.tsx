@@ -16,14 +16,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 export default function ProductPage() {
   const { id } = useParams();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const { data: product, isLoading } = useQuery<Product>({
+  const { data: product, isLoading, error } = useQuery<Product>({
     queryKey: [`/api/products/${id}`],
+    queryFn: () => apiRequest("GET", `/api/products/${id}`), //Retaining original method for robustness
   });
 
   async function addToCart() {
@@ -59,6 +61,14 @@ export default function ProductPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-red-600">Error fetching product: {error.message}</h1>
       </div>
     );
   }

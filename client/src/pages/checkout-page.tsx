@@ -77,10 +77,12 @@ export default function CheckoutPage() {
 
   const { data: cartItems, isLoading: isLoadingCart } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
+    queryFn: () => apiRequest("/api/cart"), //Corrected API call
   });
 
   const { data: products } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+    queryFn: () => apiRequest("/api/products") //Corrected API call
   });
 
   if (!user || user.isAdmin) {
