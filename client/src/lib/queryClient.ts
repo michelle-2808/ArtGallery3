@@ -11,6 +11,24 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Function to get a query function with error handling options
+export function getQueryFn({ on401 = "throw" }: { on401?: "throw" | "returnNull" } = {}) {
+  return async ({ queryKey }: { queryKey: string[] }): Promise<any> => {
+    const [url] = queryKey;
+    const response = await fetch(url);
+    
+    if (response.status === 401 && on401 === "returnNull") {
+      return null;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    return response.json();
+  };
+}
+
 export async function apiRequest<T = any>(
   url: string,
   method: string = "GET",

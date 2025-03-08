@@ -39,7 +39,7 @@ export default function ProductPage() {
     }
 
     try {
-      await apiRequest("POST", "/api/cart", {
+      await apiRequest("/api/cart", "POST", {
         productId: Number(id),
         quantity: 1,
       });
