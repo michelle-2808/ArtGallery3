@@ -1,6 +1,11 @@
 {
   "variant": "professional",
-  "primary": "#E63946",
+  "primary": "#4CAF50",
   "appearance": "light",
-  "radius": 0.5
+  "radius": 0.5,
+  "colors": {
+    "primary": "#4CAF50",
+    "secondary": "#FFC107",
+    "accent": "#FF5722"
+  }
 }

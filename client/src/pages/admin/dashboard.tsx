@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       imageUrl: formData.get("imageUrl") as string,
       category: formData.get("category") as string,
       stockQuantity: parseInt(formData.get("stockQuantity") as string),
-      isAvailable: (formData.get("isAvailable") as unknown as boolean) || false,
+      isAvailable: formData.get("isAvailable") !== null,
     };
 
     try {

@@ -8,6 +8,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
@@ -31,7 +32,7 @@
 
 .hero-section {
   background: linear-gradient(rgba(76, 175, 80, 0.8), rgba(255, 193, 7, 0.8)),
-    url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80');
+              url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80');
   background-size: cover;
   background-position: center;
   @apply py-20 text-white;
