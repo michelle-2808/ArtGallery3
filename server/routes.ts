@@ -17,6 +17,7 @@ function ensureAdmin(req: any, res: any, next: any) {
   if (req.isAuthenticated() && req.user.isAdmin) {
     return next();
   }
+  console.log("Admin access denied. User:", req.user);
   res.status(403).send("Forbidden");
 }
 

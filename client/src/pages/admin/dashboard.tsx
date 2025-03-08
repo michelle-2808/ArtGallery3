@@ -44,14 +44,41 @@ export default function AdminDashboard() {
 
   const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
     queryKey: ["/api/analytics/revenue"],
+    queryFn: () => apiRequest("/api/analytics/revenue"),
+    retry: 1,
+    onError: () => {
+      toast({
+        title: "Error loading revenue data",
+        description: "Could not fetch revenue analytics",
+        variant: "destructive",
+      });
+    },
   });
 
   const { data: orderStatusData, isLoading: isLoadingOrderStatus } = useQuery({
     queryKey: ["/api/analytics/order-status"],
+    queryFn: () => apiRequest("/api/analytics/order-status"),
+    retry: 1,
+    onError: () => {
+      toast({
+        title: "Error loading order status data",
+        description: "Could not fetch order status analytics",
+        variant: "destructive",
+      });
+    },
   });
 
   const { data: summary, isLoading: isLoadingSummary } = useQuery({
     queryKey: ["/api/analytics/summary"],
+    queryFn: () => apiRequest("/api/analytics/summary"),
+    retry: 1,
+    onError: () => {
+      toast({
+        title: "Error loading summary data",
+        description: "Could not fetch analytics summary",
+        variant: "destructive",
+      });
+    },
   });
 
   async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
