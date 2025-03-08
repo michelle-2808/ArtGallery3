@@ -96,6 +96,37 @@ export default function ProductPage() {
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-semibold mb-3 text-primary">Description</h2>
             <p className="text-lg text-gray-700 leading-relaxed">{product.description}</p>
+            
+            <div className="mt-6 border-t pt-4">
+              <h3 className="text-lg font-semibold mb-2 text-gray-800">Product Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-600">Category:</span>
+                  <span className="px-2 py-1 bg-gray-100 rounded-full text-sm">{product.category}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-600">Stock:</span>
+                  <span className={`px-2 py-1 rounded-full text-sm ${
+                    product.stockQuantity > 10 
+                      ? "bg-green-100 text-green-800" 
+                      : product.stockQuantity > 0 
+                        ? "bg-amber-100 text-amber-800" 
+                        : "bg-red-100 text-red-800"
+                  }`}>
+                    {product.stockQuantity > 10 
+                      ? "In Stock" 
+                      : product.stockQuantity > 0 
+                        ? `Low Stock (${product.stockQuantity})` 
+                        : "Out of Stock"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 border-t pt-4">
+              <h3 className="text-lg font-semibold mb-2 text-gray-800">Shipping Information</h3>
+              <p className="text-gray-700">Free shipping on all orders over $50. Delivery typically takes 3-5 business days.</p>
+            </div>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-lg">

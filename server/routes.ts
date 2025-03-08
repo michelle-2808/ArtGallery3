@@ -187,6 +187,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/generate-checkout-otp", ensureAuthenticated, async (req, res) => {
+    if (req.user.isAdmin) {
+      return res.status(403).send("Admin users cannot access checkout functionality");
+    }
+    
+    const otp = await storage.createOTP(req.user.id, "checkout", 5);
+    // In a real app, this would trigger an SMS or email
+    // For demo purposes, we return the OTP in the response
+    res.status(200).json({ success: true, code: otp });
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

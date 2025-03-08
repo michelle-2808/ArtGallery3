@@ -96,23 +96,40 @@ export default function CheckoutPage() {
       setIsProcessing(false);
     }
 
-    const userOtp = prompt("Please enter the OTP sent to your device:");
+    // First generate the OTP and show it in an alert
+const otpResponse = await apiRequest("POST", "/api/generate-checkout-otp", {});
+if (!otpResponse) {
+  toast({
+    title: "Error",
+    description: "Failed to generate OTP. Please try again.",
+    variant: "destructive",
+  });
+  setIsProcessing(false);
+  return;
+}
+
+// In a real app, this would be sent via SMS/email
+// For demo purposes, show the OTP in an alert
+alert(`Your OTP code is: ${otpResponse.code}`);
+
+// Then ask user to enter the OTP
+const userOtp = prompt("Please enter the OTP code shown:");
     
-    if (!userOtp) {
-      toast({
-        title: "Cancelled",
-        description: "Checkout was cancelled.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
-      return;
-    }
+if (!userOtp) {
+  toast({
+    title: "Cancelled",
+    description: "Checkout was cancelled.",
+    variant: "destructive",
+  });
+  setIsProcessing(false);
+  return;
+}
     
-    // Verify OTP with the server
-    const verifyResult = await apiRequest("POST", "/api/verify-otp", {
-      code: userOtp,
-      purpose: "checkout"
-    });
+// Verify OTP with the server
+const verifyResult = await apiRequest("POST", "/api/verify-otp", {
+  code: userOtp,
+  purpose: "checkout"
+});
     
     if (!verifyResult.success) {
       toast({
