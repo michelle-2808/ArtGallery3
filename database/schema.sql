@@ -1,4 +1,3 @@
-
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -80,3 +79,36 @@ CREATE INDEX idx_order_user ON orders(user_id);
 CREATE INDEX idx_cart_user ON cart_items(user_id);
 CREATE INDEX idx_otp_user ON otp_codes(user_id);
 CREATE INDEX idx_otp_expires ON otp_codes(expires_at);
+
+-- Insert admin user (password will be hashed in the application)
+INSERT INTO users (username, password, is_admin) 
+VALUES ('amruta', 'Harshal@2808', true)
+ON CONFLICT (username) DO NOTHING;
+
+-- Insert additional products for different categories
+INSERT INTO products (title, description, price, image_url, category, stock_quantity, is_available) VALUES
+-- Paintings
+('Modern Abstract', 'Contemporary abstract artwork with bold colors', 12999.00, 'https://images.unsplash.com/photo-1576153192396-180ecef2a715', 'painting', 3, true),
+('Landscape Vista', 'Serene landscape painting of mountain ranges', 15999.00, 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5', 'painting', 2, true),
+('Urban Scene', 'Dynamic cityscape in impressionist style', 8999.00, 'https://images.unsplash.com/photo-1549289524-06cf8837ace5', 'painting', 4, true),
+
+-- Pottery
+('Traditional Vase', 'Hand-thrown ceramic vase with glazed finish', 4999.00, 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261', 'pottery', 6, true),
+('Tea Set Collection', 'Complete ceramic tea set with traditional patterns', 6999.00, 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61', 'pottery', 4, true),
+('Decorative Bowls', 'Set of 3 handcrafted decorative bowls', 3599.00, 'https://images.unsplash.com/photo-1610701596007-11502861dcfa', 'pottery', 8, true),
+
+-- Sculptures
+('Bronze Figure', 'Contemporary bronze sculpture of human form', 24999.00, 'https://images.unsplash.com/photo-1554188248-986adbb73be4', 'sculpture', 2, true),
+('Stone Abstract', 'Modern abstract sculpture in natural stone', 18999.00, 'https://images.unsplash.com/photo-1561839561-b13bcfe95249', 'sculpture', 3, true),
+('Metal Art Piece', 'Contemporary metal sculpture for indoor display', 13999.00, 'https://images.unsplash.com/photo-1566145496923-4e026f5a8f0f', 'sculpture', 4, true),
+
+-- Prints
+('Limited Edition Print', 'Numbered art print from original painting', 2499.00, 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5', 'print', 10, true),
+('Digital Art Series', 'Collection of modern digital art prints', 1999.00, 'https://images.unsplash.com/photo-1561839561-b13bcfe95249', 'print', 15, true),
+('Photography Print', 'Fine art photography print on archival paper', 3499.00, 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61', 'print', 8, true),
+
+-- Glass Art
+('Blown Glass Bowl', 'Handcrafted decorative glass bowl', 7999.00, 'https://images.unsplash.com/photo-1576020886878-f8fc1a748678', 'glass', 3, true),
+('Art Glass Sculpture', 'Contemporary sculptural piece in colored glass', 11999.00, 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261', 'glass', 2, true),
+('Glass Wall Art', 'Decorative wall mounted glass art piece', 9999.00, 'https://images.unsplash.com/photo-1610701596007-11502861dcfa', 'glass', 4, true)
+ON CONFLICT DO NOTHING;
