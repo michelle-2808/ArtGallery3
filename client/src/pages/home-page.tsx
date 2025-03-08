@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { Product } from "@shared/schema";
 import ProductGrid from "@/components/product/product-grid";
 import HeroSection from "@/components/home/hero-section";
