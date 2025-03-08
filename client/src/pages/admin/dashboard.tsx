@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   LineChart,
@@ -52,6 +53,55 @@ export default function AdminDashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useQuery({
     queryKey: ["/api/analytics/summary"],
   });
+
+  async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const productData = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      price: parseFloat(formData.get("price") as string),
+      imageUrl: formData.get("imageUrl") as string,
+      category: formData.get("category") as string,
+      stockQuantity: parseInt(formData.get("stockQuantity") as string),
+      isAvailable: formData.get("isAvailable") === "true",
+    };
+
+    try {
+      await apiRequest("POST", "/api/products", productData);
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsAddingProduct(false);
+      toast({
+        title: "Success",
+        description: "Product added successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add product",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function toggleProductAvailability(productId: number, currentStatus: boolean) {
+    try {
+      await apiRequest("PATCH", `/api/products/${productId}`, {
+        isAvailable: !currentStatus
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: `Product ${currentStatus ? "hidden from" : "made available to"} customers`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update product availability",
+        variant: "destructive",
+      });
+    }
+  }
 
   if (isLoadingProducts || isLoadingRevenue || isLoadingOrderStatus || isLoadingSummary) {
     return (
@@ -100,6 +150,10 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 <Label htmlFor="stockQuantity">Stock Quantity</Label>
                 <Input id="stockQuantity" name="stockQuantity" type="number" required />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="isAvailable" name="isAvailable" />
+                <Label htmlFor="isAvailable">Make Available for Sale</Label>
               </div>
               <Button type="submit" className="w-full">Add Product</Button>
             </form>
@@ -216,7 +270,7 @@ export default function AdminDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Products</CardTitle>
+          <CardTitle>Products</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -226,15 +280,33 @@ export default function AdminDashboard() {
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products?.slice(0, 5).map((product) => (
+              {products?.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>{product.title}</TableCell>
                   <TableCell>{product.category}</TableCell>
                   <TableCell>${product.price}</TableCell>
                   <TableCell>{product.stockQuantity}</TableCell>
+                  <TableCell>
+                    {product.isAvailable ? (
+                      <span className="text-green-600">Available</span>
+                    ) : (
+                      <span className="text-gray-500">Hidden</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleProductAvailability(product.id, product.isAvailable)}
+                    >
+                      {product.isAvailable ? "Hide" : "Make Available"}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -243,33 +315,4 @@ export default function AdminDashboard() {
       </Card>
     </div>
   );
-}
-
-async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-  const formData = new FormData(e.currentTarget);
-  const productData = {
-    title: formData.get("title") as string,
-    description: formData.get("description") as string,
-    price: parseFloat(formData.get("price") as string),
-    imageUrl: formData.get("imageUrl") as string,
-    category: formData.get("category") as string,
-    stockQuantity: parseInt(formData.get("stockQuantity") as string),
-  };
-
-  try {
-    await apiRequest("POST", "/api/products", productData);
-    queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-    setIsAddingProduct(false);
-    toast({
-      title: "Success",
-      description: "Product added successfully",
-    });
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to add product",
-      variant: "destructive",
-    });
-  }
 }

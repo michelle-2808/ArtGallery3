@@ -14,11 +14,14 @@ export default function HomePage() {
     queryKey: ["/api/products"],
   });
 
-  const categories = products 
-    ? [...new Set(products.map(p => p.category))]
+  // Only show available products to customers
+  const availableProducts = products?.filter(p => p.isAvailable);
+
+  const categories = availableProducts 
+    ? [...new Set(availableProducts.map(p => p.category))]
     : [];
 
-  const filteredProducts = products?.filter(product => {
+  const filteredProducts = availableProducts?.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
