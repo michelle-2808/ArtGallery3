@@ -50,6 +50,51 @@ export default function CheckoutPage() {
         title: "OTP Generated",
         description: "An OTP has been sent to your device. Please check your email/SMS."
       });
+      
+      const userOtp = prompt("Please enter the OTP sent to your device:");
+    
+      if (!userOtp) {
+        toast({
+          title: "Cancelled",
+          description: "Checkout was cancelled.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Verify OTP with the server
+      const verifyResult = await apiRequest("POST", "/api/verify-otp", {
+        code: userOtp,
+        purpose: "checkout"
+      });
+      
+      if (!verifyResult.success) {
+        toast({
+          title: "Error",
+          description: "Invalid OTP. Please try again.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+      
+      await apiRequest("POST", "/api/orders", { totalAmount });
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      toast({
+        title: "Success",
+        description: "Order placed successfully",
+      });
+      setLocation("/");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process checkout",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
 
     const userOtp = prompt("Please enter the OTP sent to your device:");
     
