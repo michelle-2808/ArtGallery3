@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Product, InsertProduct } from "@shared/schema";
+import { Product, Order } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,46 +17,59 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus } from "lucide-react";
+import { 
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { Loader2, Plus, Package, CreditCard, TrendingUp, Users } from "lucide-react";
+
+const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
 
-  const { data: products, isLoading } = useQuery<Product[]>({
+  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
 
-  async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const productData = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      price: parseFloat(formData.get("price") as string),
-      imageUrl: formData.get("imageUrl") as string,
-      category: formData.get("category") as string,
-      stockQuantity: parseInt(formData.get("stockQuantity") as string),
-    };
+  const { data: orders, isLoading: isLoadingOrders } = useQuery<Order[]>({
+    queryKey: ["/api/orders"],
+  });
 
-    try {
-      await apiRequest("POST", "/api/products", productData);
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setIsAddingProduct(false);
-      toast({
-        title: "Success",
-        description: "Product added successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add product",
-        variant: "destructive",
-      });
-    }
-  }
+  // Calculate statistics
+  const totalProducts = products?.length || 0;
+  const totalOrders = orders?.length || 0;
+  const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.totalAmount), 0) || 0;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  if (isLoading) {
+  // Generate demo data for charts
+  const revenueData = [
+    { name: 'Mar 02', value: 4000 },
+    { name: 'Mar 03', value: 3000 },
+    { name: 'Mar 04', value: 2000 },
+    { name: 'Mar 05', value: 2780 },
+    { name: 'Mar 06', value: 1890 },
+    { name: 'Mar 07', value: 2390 },
+    { name: 'Mar 08', value: 3490 },
+  ];
+
+  const orderStatusData = [
+    { name: 'Processing', value: 5 },
+    { name: 'Shipped', value: 10 },
+    { name: 'Delivered', value: 15 },
+    { name: 'Cancelled', value: 2 },
+  ];
+
+  if (isLoadingProducts || isLoadingOrders) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -90,13 +103,7 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  required
-                />
+                <Input id="price" name="price" type="number" step="0.01" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="imageUrl">Image URL</Label>
@@ -108,12 +115,7 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stockQuantity">Stock Quantity</Label>
-                <Input
-                  id="stockQuantity"
-                  name="stockQuantity"
-                  type="number"
-                  required
-                />
+                <Input id="stockQuantity" name="stockQuantity" type="number" required />
               </div>
               <Button type="submit" className="w-full">Add Product</Button>
             </form>
@@ -121,20 +123,116 @@ export default function AdminDashboard() {
         </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Total Products</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{products?.length || 0}</p>
+            <div className="text-2xl font-bold">{totalProducts}</div>
+            <p className="text-xs text-muted-foreground">
+              Active listings in the store
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalOrders}</div>
+            <p className="text-xs text-muted-foreground">
+              Orders processed
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Total revenue generated
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${averageOrderValue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Per order average
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Last 7 Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#8884d8" 
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={orderStatusData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => 
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                  >
+                    {orderStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Products</CardTitle>
+          <CardTitle>Recent Products</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -147,7 +245,7 @@ export default function AdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products?.map((product) => (
+              {products?.slice(0, 5).map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>{product.title}</TableCell>
                   <TableCell>{product.category}</TableCell>
@@ -162,3 +260,32 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const productData = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      price: parseFloat(formData.get("price") as string),
+      imageUrl: formData.get("imageUrl") as string,
+      category: formData.get("category") as string,
+      stockQuantity: parseInt(formData.get("stockQuantity") as string),
+    };
+
+    try {
+      await apiRequest("POST", "/api/products", productData);
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setIsAddingProduct(false);
+      toast({
+        title: "Success",
+        description: "Product added successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add product",
+        variant: "destructive",
+      });
+    }
+  }
