@@ -7,13 +7,73 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+function OTPVerificationStep({ onSuccess }: { onSuccess: () => void }) {
+  const [otp, setOtp] = useState("");
+  const [displayOtp, setDisplayOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Generate and display OTP (simulating server response)
+  useEffect(() => {
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setDisplayOtp(generatedOtp);
+
+    // Show OTP in alert
+    alert(`Your OTP for checkout verification is: ${generatedOtp}`);
+  }, []);
+
+  async function handleVerify() {
+    if (!otp || otp.length < 6) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid OTP",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // For demo purposes, compare with displayed OTP
+      if (otp === displayOtp) {
+        toast({
+          title: "Success",
+          description: "OTP verified successfully",
+        });
+        onSuccess();
+      } else {
+        throw new Error("Invalid OTP");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Invalid OTP. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP" />
+      <button onClick={handleVerify} disabled={isLoading}>
+        {isLoading ? "Verifying..." : "Verify"}
+      </button>
+    </div>
+  );
+}
+
 
 export default function CheckoutPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
 
   const { data: cartItems, isLoading: isLoadingCart } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
@@ -37,127 +97,31 @@ export default function CheckoutPage() {
     if (!cartItems?.length) return;
 
     setIsProcessing(true);
-    
-    try {
-      // Request OTP from server
-      const result = await apiRequest("POST", "/api/generate-checkout-otp", {});
-      const otpCode = result.otpCode;
-      
-      // In a real app, this would be sent via SMS/email
-      // For demo purposes, we'll show it in the console/alert
-      console.log("Your checkout OTP:", otpCode);
-      toast({
-        title: "OTP Generated",
-        description: "An OTP has been sent to your device. Please check your email/SMS."
-      });
-      
-      const userOtp = prompt("Please enter the OTP sent to your device:");
-    
-      if (!userOtp) {
+    setShowOTPVerification(true);
+
+    const handleOTPVerificationSuccess = async () => {
+      try {
+        await apiRequest("POST", "/api/orders", { totalAmount });
+        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
         toast({
-          title: "Cancelled",
-          description: "Checkout was cancelled.",
-          variant: "destructive",
+          title: "Success",
+          description: "Order placed successfully",
         });
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Verify OTP with the server
-      const verifyResult = await apiRequest("POST", "/api/verify-otp", {
-        code: userOtp,
-        purpose: "checkout"
-      });
-      
-      if (!verifyResult.success) {
+        setLocation("/");
+      } catch (error) {
         toast({
           title: "Error",
-          description: "Invalid OTP. Please try again.",
+          description: "Failed to place order",
           variant: "destructive",
         });
+      } finally {
         setIsProcessing(false);
-        return;
+        setShowOTPVerification(false);
       }
-      
-      await apiRequest("POST", "/api/orders", { totalAmount });
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      toast({
-        title: "Success",
-        description: "Order placed successfully",
-      });
-      setLocation("/");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to process checkout",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    };
 
-    // First generate the OTP and show it in an alert
-const otpResponse = await apiRequest("POST", "/api/generate-checkout-otp", {});
-if (!otpResponse) {
-  toast({
-    title: "Error",
-    description: "Failed to generate OTP. Please try again.",
-    variant: "destructive",
-  });
-  setIsProcessing(false);
-  return;
-}
 
-// In a real app, this would be sent via SMS/email
-// For demo purposes, show the OTP in an alert
-alert(`Your OTP code is: ${otpResponse.code}`);
-
-// Then ask user to enter the OTP
-const userOtp = prompt("Please enter the OTP code shown:");
-    
-if (!userOtp) {
-  toast({
-    title: "Cancelled",
-    description: "Checkout was cancelled.",
-    variant: "destructive",
-  });
-  setIsProcessing(false);
-  return;
-}
-    
-// Verify OTP with the server
-const verifyResult = await apiRequest("POST", "/api/verify-otp", {
-  code: userOtp,
-  purpose: "checkout"
-});
-    
-    if (!verifyResult.success) {
-      toast({
-        title: "Error",
-        description: "Invalid OTP. Please try again.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
-      return;
-    }
-    
-    try {
-      await apiRequest("POST", "/api/orders", { totalAmount });
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      toast({
-        title: "Success",
-        description: "Order placed successfully",
-      });
-      setLocation("/");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to place order",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    // Removed redundant OTP generation and verification code
   }
 
   if (isLoadingCart) {
@@ -215,6 +179,7 @@ const verifyResult = await apiRequest("POST", "/api/verify-otp", {
               </>
             )}
           </Button>
+          {showOTPVerification && <OTPVerificationStep onSuccess={handleOTPVerificationSuccess} />}
         </CardContent>
       </Card>
     </div>

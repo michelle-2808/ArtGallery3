@@ -33,6 +33,37 @@ export default function HomePage() {
 
       <section className="container mx-auto py-12 px-4">
         <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-playfair font-bold">Our Collection</h2>
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-64"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+        
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredProducts.length > 0 ? (
+          <ProductGrid products={filteredProducts} />
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">No products found matching your search criteria.</p>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+
+      <section className="container mx-auto py-12 px-4">
+        <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-playfair font-bold">Latest Products</h2>
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
