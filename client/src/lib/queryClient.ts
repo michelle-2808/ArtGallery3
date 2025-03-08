@@ -1,4 +1,3 @@
-
 import { QueryClient } from "@tanstack/react-query";
 
 // Create a client
@@ -10,6 +9,47 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+type RequestOptions = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: any;
+};
+
+export async function apiRequest<T = any>(
+  url: string,
+  options?: RequestOptions
+): Promise<T> {
+  const fullUrl = url.startsWith("/api") ? url : `/api${url}`;
+
+  try {
+    const response = await fetch(fullUrl, {
+      method: options?.method || "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      },
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `API request failed: ${response.statusText}`);
+    }
+
+    // For DELETE requests that return 204 No Content
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to make API request');
+  }
+}
 
 // Function to get a query function with error handling options
 export function getQueryFn({ on401 = "throw" }: { on401?: "throw" | "returnNull" } = {}) {
@@ -27,29 +67,4 @@ export function getQueryFn({ on401 = "throw" }: { on401?: "throw" | "returnNull"
     
     return response.json();
   };
-}
-
-export async function apiRequest<T = any>(
-  url: string,
-  method: string = "GET",
-  data?: unknown | undefined,
-): Promise<T> {
-  const fullUrl = url.startsWith("/api") ? url : `/api${url}`;
-  
-  const res = await fetch(fullUrl, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-  });
-
-  if (!res.ok) {
-    throw new Error(`API request failed: ${res.statusText}`);
-  }
-
-  // For DELETE requests that return 204 No Content
-  if (res.status === 204) {
-    return {} as T;
-  }
-
-  return res.json();
 }
