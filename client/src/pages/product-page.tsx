@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Product } from "@shared/schema";
@@ -11,7 +11,7 @@ export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [_, setLocation] = useLocation();
   const [addingToCart, setAddingToCart] = useState(false);
 
   const { data: product, isLoading, error } = useQuery<Product>({
@@ -27,7 +27,7 @@ export default function ProductPage() {
         description: "You need to be logged in to add items to your cart",
         variant: "destructive",
       });
-      navigate("/login");
+      setLocation("/auth");
       return;
     }
 

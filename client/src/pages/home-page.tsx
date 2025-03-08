@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import HeroSection from "@/components/home/hero-section";
