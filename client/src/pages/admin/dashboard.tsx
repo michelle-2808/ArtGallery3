@@ -203,7 +203,7 @@ export default function AdminDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalProducts}</div>
+            <div className="text-2xl font-bold">{summary?.totalProducts || 0}</div>
             <p className="text-xs text-muted-foreground">
               Active listings in the store
             </p>
@@ -215,7 +215,7 @@ export default function AdminDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalOrders}</div>
+            <div className="text-2xl font-bold">{summary?.totalOrders || 0}</div>
             <p className="text-xs text-muted-foreground">
               Orders processed
             </p>
@@ -227,7 +227,7 @@ export default function AdminDashboard() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${summary?.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${(summary?.totalRevenue || 0).toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Total revenue generated
             </p>
@@ -239,7 +239,7 @@ export default function AdminDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${summary?.averageOrderValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${(summary?.averageOrderValue || 0).toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Per order average
             </p>

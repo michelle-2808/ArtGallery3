@@ -67,33 +67,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAnalyticsSummary(): Promise<any> {
-    const [productCount] = await db
-      .select({ count: count(products.id) })
-      .from(products);
+    try {
+      const [productCount] = await db
+        .select({ count: count(products.id) })
+        .from(products);
 
-    const [orderCount] = await db
-      .select({ count: count(orders.id) })
-      .from(orders);
+      const [orderCount] = await db
+        .select({ count: count(orders.id) })
+        .from(orders);
 
-    const [revenue] = await db
-      .select({ sum: sum(orders.total_amount) })
-      .from(orders);
+      // Use COALESCE to handle NULL values when no orders exist
+      const result = await db.execute(sql`
+        SELECT COALESCE(SUM(total_amount), 0) as total_revenue
+        FROM ${orders}
+      `);
+      const totalRevenue = parseFloat(result.rows[0]?.total_revenue || "0");
 
-    const averageOrderValue = orderCount.count > 0
-      ? revenue.sum / orderCount.count
-      : 0;
+      const averageOrderValue = orderCount.count > 0
+        ? totalRevenue / orderCount.count
+        : 0;
 
-    const [inventoryValue] = await db.select({
-      sum: sum(sql`${products.price} * ${products.stockQuantity}`)
-    }).from(products);
+      // Use COALESCE for inventory value calculation too
+      const inventoryResult = await db.execute(sql`
+        SELECT COALESCE(SUM(price::numeric * "stockQuantity"), 0) as total_inventory_value
+        FROM ${products}
+      `);
+      const inventoryValue = parseFloat(inventoryResult.rows[0]?.total_inventory_value || "0");
 
-    return {
-      totalProducts: productCount.count,
-      totalOrders: orderCount.count,
-      totalRevenue: revenue.sum,
-      averageOrderValue,
-      inventoryValue: inventoryValue.sum
-    };
+      return {
+        totalProducts: productCount.count,
+        totalOrders: orderCount.count,
+        totalRevenue: totalRevenue,
+        averageOrderValue,
+        inventoryValue: inventoryValue
+      };
+    } catch (error) {
+      console.error("Error getting analytics summary:", error);
+      // Return default values if there's an error
+      return {
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        inventoryValue: 0
+      };
+    }
   }
 
   // Existing methods
