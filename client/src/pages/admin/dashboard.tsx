@@ -49,6 +49,7 @@ export default function AdminDashboard() {
 
   const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+    queryFn: () => apiRequest("/api/products"),
   });
 
   const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
@@ -96,15 +97,22 @@ export default function AdminDashboard() {
     const productData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
-      price: parseFloat(formData.get("price") as string),
+      price: formData.get("price") as string,
       imageUrl: formData.get("imageUrl") as string,
       category: formData.get("category") as string,
       stockQuantity: parseInt(formData.get("stockQuantity") as string),
-      isAvailable: formData.get("isAvailable") !== null,
+      isAvailable: formData.get("isAvailable") === "true",
     };
 
     try {
-      await apiRequest("POST", "/api/products", productData);
+      await apiRequest("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      });
+
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       setIsAddingProduct(false);
       toast({
