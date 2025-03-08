@@ -16,7 +16,7 @@ export default function ProductPage() {
 
   const { data: product, isLoading, error } = useQuery<Product>({
     queryKey: [`/api/products/${id}`],
-    queryFn: async () => await apiRequest(`/api/products/${id}`),
+    queryFn: () => apiRequest(`/api/products/${id}`),
     enabled: !!id,
   });
 
