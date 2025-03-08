@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useState } from "react";
 import { Link } from "wouter";
@@ -38,10 +37,10 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <HeroSection />
-      
+
       <div className="container mx-auto py-12">
         <h2 className="text-3xl font-bold mb-8 text-center">Featured Products</h2>
-        
+
         {availableProducts.length === 0 ? (
           <p className="text-center">No products available at the moment.</p>
         ) : (
@@ -72,7 +71,7 @@ export default function HomePage() {
             ))}
           </div>
         )}
-        
+
         {availableProducts.length > 6 && (
           <div className="text-center mt-12">
             <Button asChild>

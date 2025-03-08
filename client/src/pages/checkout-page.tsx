@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -56,7 +55,7 @@ export default function CheckoutPage() {
   const subtotal = cartItems.reduce((acc, item) => {
     return acc + (parseFloat(item.product.price) * item.quantity);
   }, 0);
-  
+
   const shippingFee = 5.99;
   const total = subtotal + shippingFee;
 
@@ -64,10 +63,10 @@ export default function CheckoutPage() {
     try {
       setIsSubmitting(true);
       const response = await apiRequest("/api/generate-checkout-otp", "POST");
-      
+
       setOtpSent(true);
       setShowOtpInput(true);
-      
+
       toast({
         title: "OTP Generated",
         description: `Your OTP code is: ${response.code}`,
@@ -86,13 +85,13 @@ export default function CheckoutPage() {
   async function handlePlaceOrder() {
     try {
       setIsSubmitting(true);
-      
+
       // Verify OTP
       const otpResponse = await apiRequest("/api/verify-otp", "POST", {
         code: otpCode,
         purpose: "checkout"
       });
-      
+
       if (!otpResponse.success) {
         toast({
           title: "Invalid OTP",
@@ -101,17 +100,17 @@ export default function CheckoutPage() {
         });
         return;
       }
-      
+
       // Place order
       await apiRequest("/api/orders", "POST", {
         totalAmount: total
       });
-      
+
       toast({
         title: "Order Placed",
         description: "Your order has been placed successfully",
       });
-      
+
       navigate("/order-confirmation");
     } catch (error) {
       toast({
@@ -127,13 +126,13 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto py-12">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
           <Card>
             <CardContent className="pt-6">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-              
+
               <div className="space-y-4">
                 {cartItems.map((item) => (
                   <div key={item.productId} className="flex items-center gap-4 py-2 border-b">
@@ -159,12 +158,12 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
         </div>
-        
+
         <div>
           <Card>
             <CardContent className="pt-6">
               <h2 className="text-xl font-semibold mb-4">Payment Summary</h2>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
@@ -179,7 +178,7 @@ export default function CheckoutPage() {
                   <span>${total.toFixed(2)}</span>
                 </div>
               </div>
-              
+
               {showOtpInput ? (
                 <div className="mt-6">
                   <Label htmlFor="otp">Enter OTP Code</Label>
@@ -194,7 +193,7 @@ export default function CheckoutPage() {
                 </div>
               ) : null}
             </CardContent>
-            
+
             <CardFooter className="flex flex-col gap-2">
               {!otpSent ? (
                 <Button 
