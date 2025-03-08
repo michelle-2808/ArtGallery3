@@ -6,6 +6,7 @@ import { Product } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,15 @@ export default function ProductPage() {
     enabled: !!id,
   });
 
+  const formatPrice = (price: string | number) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(numPrice);
+  };
+
   async function handleAddToCart() {
     if (!user) {
       toast({
@@ -33,9 +43,12 @@ export default function ProductPage() {
 
     try {
       setAddingToCart(true);
-      await apiRequest("/api/cart", "POST", {
-        productId: Number(id),
-        quantity: 1,
+      await apiRequest("/api/cart", {
+        method: "POST",
+        body: {
+          productId: Number(id),
+          quantity: 1,
+        }
       });
 
       toast({
@@ -55,8 +68,8 @@ export default function ProductPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-12 text-center">
-        <p>Loading product details...</p>
+      <div className="container mx-auto py-12 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -65,8 +78,11 @@ export default function ProductPage() {
     return (
       <div className="container mx-auto py-12 text-center">
         <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-        <p>The product you're looking for doesn't exist or is out of stock.</p>
-        <Button className="mt-4" onClick={() => navigate("/")}>
+        <p>The product you're looking for doesn't exist or is no longer available.</p>
+        <Button 
+          className="mt-4" 
+          onClick={() => setLocation("/")}
+        >
           Back to Home
         </Button>
       </div>
@@ -86,7 +102,7 @@ export default function ProductPage() {
 
         <div>
           <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-          <p className="text-xl font-semibold mb-6">${parseFloat(product.price).toFixed(2)}</p>
+          <p className="text-xl font-semibold mb-6">{formatPrice(product.price)}</p>
 
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <div className="flex justify-between">
@@ -97,8 +113,14 @@ export default function ProductPage() {
             </div>
             <div className="flex justify-between mt-2">
               <span>Category:</span>
-              <span className="font-medium">{product.category}</span>
+              <span className="font-medium capitalize">{product.category}</span>
             </div>
+            {product.stockQuantity > 0 && (
+              <div className="flex justify-between mt-2">
+                <span>Stock:</span>
+                <span className="font-medium">{product.stockQuantity} units</span>
+              </div>
+            )}
           </div>
 
           <div className="prose max-w-none mb-8">
@@ -111,7 +133,14 @@ export default function ProductPage() {
             disabled={addingToCart || !product.isAvailable || product.stockQuantity <= 0}
             onClick={handleAddToCart}
           >
-            {addingToCart ? "Adding..." : "Add to Cart"}
+            {addingToCart ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding to Cart...
+              </>
+            ) : (
+              product.stockQuantity <= 0 ? "Out of Stock" : "Add to Cart"
+            )}
           </Button>
 
           {!product.isAvailable && (

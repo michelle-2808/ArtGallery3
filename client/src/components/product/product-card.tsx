@@ -11,11 +11,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   // Determine stock status for display
   const getStockStatus = () => {
     if (!product.isAvailable || product.stockQuantity <= 0) {
-      return { text: "Out of Stock", className: "stock-out" };
+      return { text: "Out of Stock", className: "text-red-500" };
     } else if (product.stockQuantity <= 5) {
-      return { text: `Only ${product.stockQuantity} left!`, className: "stock-low" };
+      return { text: `Only ${product.stockQuantity} left!`, className: "text-amber-500" };
     } else {
-      return { text: `In Stock (${product.stockQuantity})`, className: "stock-available" };
+      return { text: `In Stock (${product.stockQuantity})`, className: "text-green-600" };
     }
   };
 
@@ -31,29 +31,29 @@ export default function ProductCard({ product }: ProductCardProps) {
   const stockStatus = getStockStatus();
 
   return (
-    <div className="product-card">
-      <Link href={`/product/${product.id}`}>
-        <div className="product-image-container">
+    <div className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+      <Link href={`/products/${product.id}`}>
+        <div className="aspect-square relative overflow-hidden">
           <img 
             src={product.imageUrl} 
             alt={product.title}
-            className="product-image"
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
           />
         </div>
-        <div className="product-info">
-          <h3 className="product-title">{product.title}</h3>
-          <div className="product-category">
+        <div className="p-4">
+          <h3 className="font-semibold text-lg mb-2 line-clamp-1">{product.title}</h3>
+          <div className="text-sm text-gray-600 mb-2 flex items-center">
             <TagIcon className="inline w-3 h-3 mr-1" />
-            {product.category}
+            <span className="capitalize">{product.category}</span>
           </div>
-          <p className="product-price">{formatPrice(product.price)}</p>
-          <p className={`product-stock ${stockStatus.className}`}>
+          <p className="font-bold text-lg mb-2">{formatPrice(product.price)}</p>
+          <p className={`text-sm ${stockStatus.className}`}>
             {stockStatus.text}
           </p>
         </div>
       </Link>
-      <div className="p-3 pt-0 mt-auto">
-        <Link href={`/product/${product.id}`} className="w-full">
+      <div className="p-4 pt-0 mt-auto">
+        <Link href={`/products/${product.id}`}>
           <Button 
             className="w-full" 
             variant={!product.isAvailable || product.stockQuantity <= 0 ? "outline" : "default"}
