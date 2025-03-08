@@ -15,6 +15,15 @@ export default function HomePage() {
     queryFn: async () => await apiRequest("/api/products")
   });
 
+  const formatPrice = (price: string | number) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(numPrice);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-12 text-center">
@@ -58,7 +67,7 @@ export default function HomePage() {
                   <h3 className="font-semibold text-lg mb-2">{product.title}</h3>
                   <p className="text-gray-500 mb-4 line-clamp-2">{product.description}</p>
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-lg">${parseFloat(product.price).toFixed(2)}</span>
+                    <span className="font-bold text-lg">{formatPrice(product.price)}</span>
                     <Button
                       asChild
                       variant="outline"

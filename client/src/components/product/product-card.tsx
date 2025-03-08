@@ -19,6 +19,15 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const formatPrice = (price: string | number) => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(numPrice);
+  };
+
   const stockStatus = getStockStatus();
 
   return (
@@ -37,7 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <TagIcon className="inline w-3 h-3 mr-1" />
             {product.category}
           </div>
-          <p className="product-price">${product.price}</p>
+          <p className="product-price">{formatPrice(product.price)}</p>
           <p className={`product-stock ${stockStatus.className}`}>
             {stockStatus.text}
           </p>

@@ -34,6 +34,15 @@ import { Loader2, Plus, Package, CreditCard, TrendingUp, Users } from "lucide-re
 
 const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
+const formatPrice = (price: string | number) => {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(numPrice);
+};
+
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -227,7 +236,7 @@ export default function AdminDashboard() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(summary?.totalRevenue || 0).toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatPrice(summary?.totalRevenue || 0)}</div>
             <p className="text-xs text-muted-foreground">
               Total revenue generated
             </p>
@@ -239,7 +248,7 @@ export default function AdminDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(summary?.averageOrderValue || 0).toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatPrice(summary?.averageOrderValue || 0)}</div>
             <p className="text-xs text-muted-foreground">
               Per order average
             </p>
@@ -324,7 +333,7 @@ export default function AdminDashboard() {
                 <TableRow key={product.id}>
                   <TableCell>{product.title}</TableCell>
                   <TableCell>{product.category}</TableCell>
-                  <TableCell>${product.price}</TableCell>
+                  <TableCell>{formatPrice(product.price)}</TableCell>
                   <TableCell>
                     {product.stockQuantity <= 0 ? (
                       <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
