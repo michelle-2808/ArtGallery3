@@ -94,17 +94,24 @@ export default function AdminDashboard() {
   async function handleAddProduct(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const productData = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      price: formData.get("price") as string,
-      imageUrl: formData.get("imageUrl") as string,
-      category: formData.get("category") as string,
-      stockQuantity: parseInt(formData.get("stockQuantity") as string),
-      isAvailable: formData.get("isAvailable") === "true",
-    };
 
     try {
+      const productData = {
+        title: formData.get("title") as string,
+        description: formData.get("description") as string,
+        price: formData.get("price") as string,
+        imageUrl: formData.get("imageUrl") as string,
+        category: formData.get("category") as string,
+        stockQuantity: parseInt(formData.get("stockQuantity") as string),
+        isAvailable: formData.get("isAvailable") === "true",
+      };
+
+      // Validate required fields
+      if (!productData.title || !productData.description || !productData.price || 
+          !productData.imageUrl || !productData.category || isNaN(productData.stockQuantity)) {
+        throw new Error("All fields are required");
+      }
+
       await apiRequest("/api/products", {
         method: "POST",
         headers: {
@@ -120,27 +127,26 @@ export default function AdminDashboard() {
         description: "Product added successfully",
       });
     } catch (error) {
-      if (error instanceof Error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add product",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add product",
+        variant: "destructive",
+      });
     }
   }
 
   async function toggleProductAvailability(productId: number, currentStatus: boolean) {
     try {
-      await apiRequest("PATCH", `/api/products/${productId}`, {
-        isAvailable: !currentStatus
+      await apiRequest(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          isAvailable: !currentStatus
+        })
       });
+
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Success",
